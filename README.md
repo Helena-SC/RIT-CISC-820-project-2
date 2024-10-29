@@ -16,5 +16,3 @@ since the Optimization progress map is in 2D, thus only function 3 could be plot
 
 ## Notice:
 Due to space constraints, we have not included additional experimental results for different parameter settings. However, these results can be obtained by modifying and playing with the parameters in the code.
-
-Any more doubts on running this code, please feel free to contact sl5074@g.rit.edu for more information.
