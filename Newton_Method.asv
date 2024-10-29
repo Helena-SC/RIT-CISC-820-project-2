@@ -1,0 +1,63 @@
+% % Unified Newton Method
+% function [x, minima, steps_done] = Newton_Method(func, grad_func, hessian_func, x, tol, max_iter)
+%     steps_done = 0;
+%     while steps_done < max_iter
+%         grad_x = grad_func(x);
+%         hessian_x = hessian_func(x);
+% 
+%         % 计算方向: p = -H^(-1) * grad
+%         direction = -hessian_x \ grad_x;
+% 
+%         % 更新 x
+%         x_updated = x + direction;
+%         steps_done = steps_done + 1;
+% 
+%         % 检查收敛条件
+%         if norm(grad_x, 2) < tol
+%             break;
+%         end
+% 
+%         x = x_updated;
+%     end
+% 
+%     minima = func(x);
+% end
+
+function [x, minima, steps_done] = Newton_Method(func, grad_func, hessian_func, x, tol, max_iter, constraint)
+    steps_done = 0;
+    alpha_start = 1;  % 初始学习率
+    while steps_done < max_iter
+        grad_x = grad_func(x);
+        hessian_x = hessian_func(x);
+        
+        % 计算方向: p = -H^(-1) * grad
+        direction = -hessian_x \ grad_x;
+        
+        % 自适应学习率
+        alpha = Back_Track(func, grad_x, direction, x, alpha_start, constraint);
+        
+        % 更新 x
+        x_updated = x + alpha * direction;
+        steps_done = steps_done + 1;
+        
+        % 如果是 func2，确保更新后的 x 仍在可行域内
+        if constraint
+            if all(constraint{2} - constraint{1} * x_updated > 0)
+                x = x_updated;
+            else
+                % 如果更新后的 x 不在可行域内，缩小步长 alpha
+                alpha_start = alpha_start * 0.5;
+                continue;
+            end
+        else
+            x = x_updated;
+        end
+        
+        % 检查收敛条件
+        if norm(grad_x, 2) < tol
+            break;
+        end
+    end
+    
+    minima = func(x);
+end

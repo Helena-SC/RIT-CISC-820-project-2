@@ -1,0 +1,87 @@
+% Unified Quasi-Newton Method (BFGS)
+function [x, minima, steps_done] = Quasi_Newton(func, grad_func, x, tol, max_iter)
+    steps_done = 0;
+    n = length(x);
+    H = eye(n);  % 初始 Hessian 近似矩阵为单位矩阵
+    
+    while steps_done < max_iter
+        grad_x = grad_func(x);
+        
+        % 计算方向: p = -H * grad
+        direction = -H * grad_x;
+        
+        % 更新 x
+        alpha = 1;  % 使用固定步长，也可以使用线搜索
+        x_new = x + alpha * direction;
+        grad_new = grad_func(x_new);
+        
+        % 计算 BFGS 更新
+        s = x_new - x;
+        y = grad_new - grad_x;
+        rho = 1 / (y' * s);
+        I = eye(n);
+        H = (I - rho * (s * y')) * H * (I - rho * (y * s')) + rho * (s * s');
+        
+        % 更新步数和 x
+        steps_done = steps_done + 1;
+        x = x_new;
+        
+        % 检查收敛条件
+        if norm(grad_x, 2) < tol
+            break;
+        end
+    end
+    
+    minima = func(x);
+end
+
+function [x, minima, steps_done] = Quasi_Newton(func, grad_func, x, tol, max_iter, constraint)
+    steps_done = 0;
+    n = length(x);
+    H = eye(n);  % 初始 Hessian 近似矩阵为单位矩阵
+    alpha_start = 1;  % 初始学习率
+    
+    while steps_done < max_iter
+        grad_x = grad_func(x);
+        
+        % 计算方向: p = -H * grad
+        direction = -H * grad_x;
+        
+        % 自适应学习率
+        alpha = Back_Track(func, grad_x, direction, x, alpha_start, constraint);
+        
+        % 更新 x
+        x_new = x + alpha * direction;
+        grad_new = grad_func(x_new);
+        
+        % 如果是 func2，确保更新后的 x 仍在可行域内
+        if constraint
+            if all(constraint{2} - constraint{1} * x_new > 0)
+                x = x_new;
+            else
+                % 如果更新后的 x 不在可行域内，缩小步长 alpha
+                alpha_start = alpha_start * 0.5;
+                continue;
+            end
+        else
+            x = x_new;
+        end
+        
+        % 计算 BFGS 更新
+        s = x_new - x;
+        y = grad_new - grad_x;
+        rho = 1 / (y' * s);
+        I = eye(n);
+        H = (I - rho * (s * y')) * H * (I - rho * (y * s')) + rho * (s * s');
+        
+        % 更新步数
+        steps_done = steps_done + 1;
+        
+        % 检查收敛条件
+        if norm(grad_x, 2) < tol
+            break;
+        end
+    end
+    
+    minima = func(x);
+end
